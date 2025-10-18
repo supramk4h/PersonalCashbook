@@ -1,95 +1,1333 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Personal Ledger System</title>
-<link rel="stylesheet" href="style.css">
-  <!-- Supabase JS library -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.32.0/dist/supabase.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.32.0/dist/supabase.min.js"></script>
-<script src="script.js"></script>
-
-
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%232563eb'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z' /%3E%3C/svg%3E" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personal Cashbook</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: { "50": "#eff6ff", "100": "#dbeafe", "200": "#bfdbfe", "300": "#93c5fd", "400": "#60a5fa", "500": "#3b82f6", "600": "#2563eb", "700": "#1d4ed8", "800": "#1e40af", "900": "#1e3a8a", "950": "#172554" }
+            }
+          }
+        }
+      }
+    </script>
+<style type="text/css">
+  .page { display: none; }
+  .page.active { display: block; }
+  #mobile-sidebar-container.open { transform: translateX(0%); }
+  #mobile-sidebar-container { transition: transform 0.3s ease-in-out; }
+  .modal-container {
+    transition: opacity 0.3s ease;
+  }
+  @media print {
+    body * { visibility: hidden; }
+    #printable-area, #printable-area * { visibility: visible; }
+    #printable-area { position: absolute; left: 0; top: 0; width: 100%; }
+    .dark-mode-print-fix .dark\:bg-gray-800,
+    .dark-mode-print-fix .dark\:bg-gray-900 {
+      background-color: white !important;
+    }
+    .dark-mode-print-fix .dark\:text-white,
+    .dark-mode-print-fix .dark\:text-gray-300,
+    .dark-mode-print-fix .dark\:text-gray-400 {
+      color: black !important;
+    }
+    .dark-mode-print-fix .dark\:border-gray-700 {
+      border-color: #ccc !important;
+    }
+  }
+</style>
 </head>
-<body>
+<body class="bg-gray-100 dark:bg-gray-900">
+    <div id="app"></div>
+    <div id="loading" class="fixed inset-0 bg-white dark:bg-gray-900 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+            <p class="mt-4 text-gray-600 dark:text-gray-400">Loading Cashbook...</p>
+        </div>
+    </div>
 
-<div class="container">
-  <h1>Personal Ledger System</h1>
-  
-  <div class="tabs">
-    <div class="tab active" data-tab="accounts">Accounts</div>
-    <div class="tab" data-tab="transactions">Transactions</div>
-    <div class="tab" data-tab="reports">Reports</div>
-  </div>
+<script type="module">
+// --- SUPABASE CONFIGURATION ---
+const SUPABASE_URL = 'https://iuruhsphunthqzponmoh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1cnVoc3BodW50aHF6cG9ubW9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3Mjc1NzcsImV4cCI6MjA3NjMwMzU3N30.jbtECT4aNWAt_aQLa64kum_v03lIkre4Ivgb1N0jHwA';
 
-  <!-- Accounts Tab -->
-  <div class="tab-content active" id="accounts">
-    <h2>Manage Accounts</h2>
-    <form id="account-form">
-      <input type="text" id="account-name" placeholder="Account Name" required>
-      <select id="account-type">
-        <option value="">Select Type</option>
-        <option value="Asset">Asset</option>
-        <option value="Liability">Liability</option>
-        <option value="Income">Income</option>
-        <option value="Expense">Expense</option>
-      </select>
-      <input type="number" id="account-amount" placeholder="Opening Balance (optional)">
-      <button type="submit">Add Account</button>
-    </form>
-    <table id="accounts-table">
-      <thead>
-        <tr>
-          <th>Account Name</th>
-          <th>Type</th>
-          <th>Amount</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  <!-- Transactions Tab -->
-  <div class="tab-content" id="transactions">
-    <h2>Record Transaction</h2>
-    <form id="transaction-form">
-      <input type="date" id="trans-date" required>
-      <input type="text" id="voucher-no" placeholder="Voucher No (auto)" readonly>
-      <select id="trans-account"><option value="">Select Account</option></select>
-      <textarea id="trans-narration" placeholder="Narration"></textarea>
-      <input type="number" id="trans-cr" placeholder="Credit Amount">
-      <input type="number" id="trans-dr" placeholder="Debit Amount">
-      <button type="submit">Add Transaction</button>
-    </form>
-    <table id="transactions-table">
-      <thead>
-        <tr>
-          <th>Voucher No</th>
-          <th>Date</th>
-          <th>Account</th>
-          <th>Narration</th>
-          <th>Credit</th>
-          <th>Debit</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+// --- CORE STATE & CONFIG ---
+const ICONS = {
+    ChartPie: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" /></svg>`,
+    CreditCard: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15A2.25 2.25 0 002.25 6.75v10.5A2.25 2.25 0 004.5 19.5z" /></svg>`,
+    DocumentText: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>`,
+    PresentationChartLine: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h12A2.25 2.25 0 0020.25 14.25V3m-16.5 0h16.5m-16.5 0H3.75m16.5 0h.008v.008h-.008V3zM3.75 7.5h16.5m-16.5 0h.008v.008H3.75V7.5zm16.5 0h.008v.008h-.008V7.5zm-16.5 3.75h16.5m-16.5 0h.008v.008H3.75v-.008zm16.5 0h.008v.008h-.008v-.008z" /></svg>`,
+    Cog6Tooth: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.11-1.226.55-.22 1.156-.22 1.706 0 .55.22 1.02.684 1.11 1.226l.082.498a1.5 1.5 0 001.256 1.053l.547.098a1.5 1.5 0 011.332 1.002l.24.577a1.5 1.5 0 01-.398 1.623l-.433.39a1.5 1.5 0 00-.54 1.257l.012.59a1.5 1.5 0 01-1.028 1.353l-.537.227a1.5 1.5 0 00-1.053 1.256l-.082.498c-.09.542-.56 1.007-1.11 1.226-.55.22-1.156-.22-1.706 0-.55-.22-1.02-.684-1.11-1.226l-.082-.498a1.5 1.5 0 00-1.256-1.053l-.547-.098a1.5 1.5 0 01-1.332-1.002l-.24-.577a1.5 1.5 0 01.398-1.623l.433-.39a1.5 1.5 0 00.54-1.257l-.012-.59a1.5 1.5 0 011.028-1.353l.537-.227a1.5 1.5 0 001.053-1.256l.082-.498z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>`,
+    Banknotes: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>`,
+    Bars3: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>`,
+    Sun: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>`,
+    Moon: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25c0 5.385 4.365 9.75 9.75 9.75 2.572 0 4.921-.994 6.752-2.698z" /></svg>`,
+    ArrowTrendingUp: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-3.75-.625m3.75.625v3.75" /></svg>`,
+    ArrowTrendingDown: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.511l-5.511-3.182" /></svg>`,
+    Wallet: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 3a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 12m15 0a2.25 2.25 0 01-2.25 2.25H9a2.25 2.25 0 01-2.25-2.25m13.5 0a2.25 2.25 0 00-2.25-2.25H9a2.25 2.25 0 00-2.25 2.25" /></svg>`,
+    PlusCircle: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+    DocumentPlus: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>`,
+    UserPlus: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.5 21h-5A12.318 12.318 0 014 19.235z" /></svg>`,
+    PencilSquare: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>`,
+    Trash: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.124-2.033-2.124H8.033c-1.124 0-2.033.944-2.033 2.124v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>`,
+    Plus: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>`,
+    XMark: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`,
+    Printer: (c) => `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${c}"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 18.25m10.56-4.421l.54 4.421m-11.64-4.421L3 18.25m11.64 0l.54 4.421m0 0L21 18.25m-18 0l-1.17-1.17A41.296 41.296 0 013 11.25c0-2.02.586-3.94 1.636-5.618L4.5 4.5m17 2.25l-1.17 1.17a41.296 41.296 0 00-1.636 5.618c0 2.02.586 3.94 1.636 5.618L19.5 18.25m-15-13.5l1.17-1.17A41.312 41.312 0 0112 3c1.86 0 3.653.27 5.336.75l1.17 1.17m-10.5 10.5c.34.036.68.069 1.02.102m7.44 0c.34-.033.68-.066 1.02-.102m-8.46 0L12 12.75m0 0l.621 5.013M12 12.75l-.621 5.013" /></svg>`,
+};
 
-  <!-- Reports Tab -->
-  <div class="tab-content" id="reports">
-    <h2>Reports</h2>
-    <p>Reports placeholder: merged total balance, trial balance, balance sheet, individual account reports.</p>
-    <button id="generate-report">Generate Reports</button>
-<button id="export-csv-btn">Backup Ledger to CSV</button>
-  
-  </div>
-  
-</div>
+const NAVIGATION_ITEMS = [
+  { path: '#/', name: 'Dashboard', icon: ICONS.ChartPie },
+  { path: '#/accounts', name: 'Accounts', icon: ICONS.CreditCard },
+  { path: '#/vouchers', name: 'Vouchers', icon: ICONS.DocumentText },
+  { path: '#/reports', name: 'Reports', icon: ICONS.PresentationChartLine },
+  { path: '#/settings', name: 'Settings', icon: ICONS.Cog6Tooth },
+];
 
-<script src="script.js"></script>
+const AccountType = {
+    Cash: 'Cash', Bank: 'Bank', Expense: 'Expense', Income: 'Income',
+    Asset: 'Asset', Liability: 'Liability', Equity: 'Equity', Other: 'Other',
+};
+
+const VoucherType = {
+    Journal: 'Journal', Payment: 'Payment', Receipt: 'Receipt', Contra: 'Contra',
+};
+
+// --- STATE MANAGEMENT ---
+let state = {
+    accounts: [],
+    vouchers: [],
+    settings: { currency: '$' },
+    theme: 'light',
+    ui: { isSidebarOpen: false }
+};
+
+// --- SUPABASE DATA OPERATIONS ---
+const loadData = async () => {
+    try {
+        // Load accounts
+        const { data: accounts, error: accountsError } = await supabase
+            .from('accounts')
+            .select('*')
+            .order('name');
+        
+        if (accountsError) throw accountsError;
+
+        // Load vouchers with entries
+        const { data: vouchers, error: vouchersError } = await supabase
+            .from('vouchers')
+            .select(`
+                *,
+                voucher_entries (*)
+            `)
+            .order('date', { ascending: false });
+        
+        if (vouchersError) throw vouchersError;
+
+        // Load settings
+        const { data: settings, error: settingsError } = await supabase
+            .from('settings')
+            .select('*')
+            .single();
+        
+        if (settingsError && settingsError.code !== 'PGRST116') throw settingsError;
+
+        return {
+            accounts: accounts || [],
+            vouchers: vouchers || [],
+            settings: settings || { currency: '$' }
+        };
+    } catch (error) {
+        console.error("Error loading data from Supabase:", error);
+        return {
+            accounts: [],
+            vouchers: [],
+            settings: { currency: '$' }
+        };
+    }
+};
+
+const saveAccount = async (accountData) => {
+    try {
+        if (accountData.id) {
+            // Update existing account
+            const { data, error } = await supabase
+                .from('accounts')
+                .update({
+                    name: accountData.name,
+                    type: accountData.type,
+                    opening_balance: accountData.openingBalance,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', accountData.id)
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return data;
+        } else {
+            // Create new account
+            const { data, error } = await supabase
+                .from('accounts')
+                .insert({
+                    name: accountData.name,
+                    type: accountData.type,
+                    opening_balance: accountData.openingBalance
+                })
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return data;
+        }
+    } catch (error) {
+        console.error("Error saving account:", error);
+        throw error;
+    }
+};
+
+const deleteAccount = async (id) => {
+    try {
+        const { error } = await supabase
+            .from('accounts')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+    } catch (error) {
+        console.error("Error deleting account:", error);
+        throw error;
+    }
+};
+
+const saveVoucher = async (voucherData) => {
+    try {
+        if (voucherData.id) {
+            // Update existing voucher
+            const { data: voucher, error: voucherError } = await supabase
+                .from('vouchers')
+                .update({
+                    date: voucherData.date,
+                    type: voucherData.type,
+                    narration: voucherData.narration,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', voucherData.id)
+                .select()
+                .single();
+            
+            if (voucherError) throw voucherError;
+
+            // Delete existing entries
+            await supabase
+                .from('voucher_entries')
+                .delete()
+                .eq('voucher_id', voucherData.id);
+
+            // Insert new entries
+            const entries = voucherData.entries.map(entry => ({
+                voucher_id: voucherData.id,
+                account_id: entry.accountId,
+                narration: entry.narration,
+                debit: entry.debit,
+                credit: entry.credit
+            }));
+
+            const { error: entriesError } = await supabase
+                .from('voucher_entries')
+                .insert(entries);
+            
+            if (entriesError) throw entriesError;
+
+            return voucher;
+        } else {
+            // Create new voucher
+            const { data: voucher, error: voucherError } = await supabase
+                .from('vouchers')
+                .insert({
+                    date: voucherData.date,
+                    type: voucherData.type,
+                    narration: voucherData.narration
+                })
+                .select()
+                .single();
+            
+            if (voucherError) throw voucherError;
+
+            // Insert entries
+            const entries = voucherData.entries.map(entry => ({
+                voucher_id: voucher.id,
+                account_id: entry.accountId,
+                narration: entry.narration,
+                debit: entry.debit,
+                credit: entry.credit
+            }));
+
+            const { error: entriesError } = await supabase
+                .from('voucher_entries')
+                .insert(entries);
+            
+            if (entriesError) throw entriesError;
+
+            return voucher;
+        }
+    } catch (error) {
+        console.error("Error saving voucher:", error);
+        throw error;
+    }
+};
+
+const deleteVoucher = async (id) => {
+    try {
+        const { error } = await supabase
+            .from('vouchers')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+    } catch (error) {
+        console.error("Error deleting voucher:", error);
+        throw error;
+    }
+};
+
+const updateSettings = async (newSettings) => {
+    try {
+        const { data: existingSettings } = await supabase
+            .from('settings')
+            .select('*')
+            .single();
+
+        if (existingSettings) {
+            // Update existing settings
+            const { data, error } = await supabase
+                .from('settings')
+                .update({
+                    currency: newSettings.currency,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', existingSettings.id)
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return data;
+        } else {
+            // Create new settings
+            const { data, error } = await supabase
+                .from('settings')
+                .insert({
+                    currency: newSettings.currency
+                })
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return data;
+        }
+    } catch (error) {
+        console.error("Error updating settings:", error);
+        throw error;
+    }
+};
+
+// --- CALCULATIONS ---
+const calculateAccountBalance = (accountId) => {
+    const account = state.accounts.find(a => a.id === accountId);
+    if (!account) return 0;
+    let balance = parseFloat(account.opening_balance) || 0;
+    state.vouchers.forEach(voucher => {
+        voucher.voucher_entries.forEach(entry => {
+            if (entry.account_id === accountId) {
+                balance += parseFloat(entry.debit) - parseFloat(entry.credit);
+            }
+        });
+    });
+    return balance;
+};
+
+const calculateAccountBalanceAsOf = (accountId, asOfDate) => {
+    const account = state.accounts.find(a => a.id === accountId);
+    if (!account) return 0;
+    let balance = parseFloat(account.opening_balance) || 0;
+    state.vouchers
+        .filter(v => new Date(v.date) < asOfDate)
+        .forEach(voucher => {
+            voucher.voucher_entries.forEach(entry => {
+                if (entry.account_id === accountId) {
+                    balance += parseFloat(entry.debit) - parseFloat(entry.credit);
+                }
+            });
+        });
+    return balance;
+};
+
+// --- STATE MUTATIONS (CRUD) ---
+async function addAccount(accountData) {
+    try {
+        const newAccount = await saveAccount(accountData);
+        state.accounts.push(newAccount);
+        renderApp();
+        return true;
+    } catch (error) {
+        alert('Error saving account: ' + error.message);
+        return false;
+    }
+}
+
+async function updateAccount(id, accountData) {
+    try {
+        const updatedAccount = await saveAccount({ ...accountData, id });
+        state.accounts = state.accounts.map(acc => acc.id === id ? updatedAccount : acc);
+        renderApp();
+        return true;
+    } catch (error) {
+        alert('Error updating account: ' + error.message);
+        return false;
+    }
+}
+
+async function deleteAccountById(id) {
+    const isUsed = state.vouchers.some(v => v.voucher_entries.some(e => e.account_id === id));
+    if (isUsed) {
+        alert('This account cannot be deleted because it is used in one or more vouchers.');
+        return false;
+    }
+    
+    try {
+        await deleteAccount(id);
+        state.accounts = state.accounts.filter(acc => acc.id !== id);
+        renderApp();
+        return true;
+    } catch (error) {
+        alert('Error deleting account: ' + error.message);
+        return false;
+    }
+}
+
+async function addVoucher(voucherData) {
+    try {
+        const newVoucher = await saveVoucher(voucherData);
+        // Reload data to get the complete voucher with entries
+        const data = await loadData();
+        state.vouchers = data.vouchers;
+        window.location.hash = '/vouchers';
+        return true;
+    } catch (error) {
+        alert('Error saving voucher: ' + error.message);
+        return false;
+    }
+}
+
+async function updateVoucher(id, voucherData) {
+    try {
+        await saveVoucher({ ...voucherData, id });
+        // Reload data to get updated voucher with entries
+        const data = await loadData();
+        state.vouchers = data.vouchers;
+        window.location.hash = '/vouchers';
+        return true;
+    } catch (error) {
+        alert('Error updating voucher: ' + error.message);
+        return false;
+    }
+}
+
+async function deleteVoucherById(id) {
+    try {
+        await deleteVoucher(id);
+        state.vouchers = state.vouchers.filter(v => v.id !== id);
+        renderApp();
+        return true;
+    } catch (error) {
+        alert('Error deleting voucher: ' + error.message);
+        return false;
+    }
+}
+
+async function updateSettingsInDB(newSettings) {
+    try {
+        const updatedSettings = await updateSettings(newSettings);
+        state.settings = updatedSettings;
+        alert('Settings saved successfully!');
+        renderApp();
+        return true;
+    } catch (error) {
+        alert('Error saving settings: ' + error.message);
+        return false;
+    }
+}
+
+// --- UI THEME ---
+function applyTheme(theme) {
+    const effectiveTheme = theme || state.theme || 'light';
+    if (effectiveTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+    state.theme = effectiveTheme;
+    localStorage.setItem('theme', effectiveTheme);
+}
+
+function toggleTheme() {
+    const newTheme = state.theme === 'light' ? 'dark' : 'light';
+    applyTheme(newTheme);
+    renderApp();
+}
+
+// --- RENDERING: COMPONENTS ---
+const formatCurrency = (amount) => `${state.settings.currency} ${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const Sidebar = () => `
+    <div class="flex flex-col w-64 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-center h-16 border-b dark:border-gray-700">
+        ${ICONS.Banknotes('w-8 h-8 text-primary-600')}
+        <span class="ml-2 text-xl font-bold text-gray-800 dark:text-white">Cashbook</span>
+      </div>
+      <nav class="flex-1 p-4 space-y-2">
+        ${NAVIGATION_ITEMS.map(item => {
+            const isActive = (window.location.hash || '#/') === item.path;
+            return `
+              <a href="${item.path}" class="flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors duration-150 ${isActive ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}">
+                ${item.icon('w-5 h-5 mr-3')}
+                ${item.name}
+              </a>`;
+        }).join('')}
+      </nav>
+    </div>`;
+
+const Header = () => `
+    <header class="flex justify-between items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 md:hidden">
+      <div class="flex items-center">
+        <button data-action="toggle-sidebar" class="p-2 mr-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
+            ${ICONS.Bars3('w-6 h-6')}
+        </button>
+        <div class="flex items-center">
+            ${ICONS.Banknotes('w-7 h-7 text-primary-600')}
+            <h1 class="ml-2 text-xl font-bold">Cashbook</h1>
+        </div>
+      </div>
+      <button data-action="toggle-theme" class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
+        ${state.theme === 'light' ? ICONS.Moon('w-6 h-6') : ICONS.Sun('w-6 h-6')}
+      </button>
+    </header>`;
+    
+const Dashboard = () => {
+    const totalInflow = state.vouchers.reduce((sum, v) => sum + v.voucher_entries.reduce((s, e) => s + parseFloat(e.credit), 0), 0);
+    const totalOutflow = state.vouchers.reduce((sum, v) => sum + v.voucher_entries.reduce((s, e) => s + parseFloat(e.debit), 0), 0);
+    const recentTransactions = [...state.vouchers].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+
+    // Monthly Chart Data
+    const monthlyDataMap = new Map();
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    for (let i = 0; i < 6; i++) {
+        const date = new Date(sixMonthsAgo.getFullYear(), sixMonthsAgo.getMonth() + i, 1);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const name = date.toLocaleString('default', { month: 'short' });
+        monthlyDataMap.set(key, { name, inflow: 0, outflow: 0 });
+    }
+    state.vouchers.forEach(voucher => {
+        const date = new Date(voucher.date);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (monthlyDataMap.has(key)) {
+            const data = monthlyDataMap.get(key);
+            data.inflow += voucher.voucher_entries.reduce((s, e) => s + parseFloat(e.credit), 0);
+            data.outflow += voucher.voucher_entries.reduce((s, e) => s + parseFloat(e.debit), 0);
+        }
+    });
+    const monthlyChartData = Array.from(monthlyDataMap.values());
+    const maxMonthlyValue = Math.max(1, ...monthlyChartData.flatMap(d => [d.inflow, d.outflow]));
+
+    // Category Chart Data
+    const categoryMap = new Map();
+    state.vouchers.forEach(voucher => {
+        voucher.voucher_entries.forEach(entry => {
+            if(parseFloat(entry.debit) > 0) {
+                const account = state.accounts.find(a => a.id === entry.account_id);
+                const accountName = account ? account.name : 'Unknown';
+                categoryMap.set(accountName, (categoryMap.get(accountName) || 0) + parseFloat(entry.debit));
+            }
+        });
+    });
+    let mainCategories = Array.from(categoryMap.entries()).sort((a,b) => b[1] - a[1]);
+    let otherValue = 0;
+    if (mainCategories.length > 5) {
+        const others = mainCategories.splice(5);
+        otherValue = others.reduce((sum, [, value]) => sum + value, 0);
+    }
+    if (otherValue > 0) mainCategories.push(['Other', otherValue]);
+    const totalCategoryValue = mainCategories.reduce((sum, [,val]) => sum + val, 0);
+    const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF4560'];
+    let cumulativePercent = 0;
+    const conicGradient = mainCategories.map(([name, value], index) => {
+        const percent = (value / totalCategoryValue) * 100;
+        const start = cumulativePercent;
+        cumulativePercent += percent;
+        return `${colors[index % colors.length]} ${start}% ${cumulativePercent}%`;
+    }).join(', ');
+    
+
+    return `
+        <div class="space-y-6">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Dashboard</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-start justify-between"><div><p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Inflow</p><p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">${formatCurrency(totalInflow)}</p></div><div class="p-2 bg-primary-100 dark:bg-primary-900/50 rounded-lg text-green-500">${ICONS.ArrowTrendingUp('w-6 h-6')}</div></div>
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-start justify-between"><div><p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Outflow</p><p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">${formatCurrency(totalOutflow)}</p></div><div class="p-2 bg-primary-100 dark:bg-primary-900/50 rounded-lg text-red-500">${ICONS.ArrowTrendingDown('w-6 h-6')}</div></div>
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-start justify-between"><div><p class="text-sm font-medium text-gray-500 dark:text-gray-400">Net Balance</p><p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">${formatCurrency(totalInflow - totalOutflow)}</p></div><div class="p-2 bg-primary-100 dark:bg-primary-900/50 rounded-lg text-blue-500">${ICONS.Wallet('w-6 h-6')}</div></div>
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-start justify-between"><div><p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Accounts</p><p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">${state.accounts.length}</p></div><div class="p-2 bg-primary-100 dark:bg-primary-900/50 rounded-lg text-indigo-500">${ICONS.CreditCard('w-6 h-6')}</div></div>
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-start justify-between"><div><p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Vouchers</p><p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">${state.vouchers.length}</p></div><div class="p-2 bg-primary-100 dark:bg-primary-900/50 rounded-lg text-purple-500">${ICONS.DocumentText('w-6 h-6')}</div></div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                 <a href="#/vouchers/new" class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md flex flex-col items-center justify-center text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"><div class="p-3 mb-2 bg-primary-100 dark:bg-primary-900/50 rounded-full">${ICONS.PlusCircle('w-6 h-6 text-primary-600')}</div><p class="font-semibold text-sm text-gray-700 dark:text-gray-200">Add Income</p></a>
+                 <a href="#/vouchers/new" class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md flex flex-col items-center justify-center text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"><div class="p-3 mb-2 bg-primary-100 dark:bg-primary-900/50 rounded-full">${ICONS.DocumentPlus('w-6 h-6 text-primary-600')}</div><p class="font-semibold text-sm text-gray-700 dark:text-gray-200">Add Expense</p></a>
+                 <a href="#/accounts" class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md flex flex-col items-center justify-center text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"><div class="p-3 mb-2 bg-primary-100 dark:bg-primary-900/50 rounded-full">${ICONS.UserPlus('w-6 h-6 text-primary-600')}</div><p class="font-semibold text-sm text-gray-700 dark:text-gray-200">New Account</p></a>
+                 <a href="#/reports" class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md flex flex-col items-center justify-center text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"><div class="p-3 mb-2 bg-primary-100 dark:bg-primary-900/50 rounded-full">${ICONS.PresentationChartLine('w-6 h-6 text-primary-600')}</div><p class="font-semibold text-sm text-gray-700 dark:text-gray-200">View Reports</p></a>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold mb-4">Monthly Inflow / Outflow</h3>
+                    <div class="w-full h-72 flex items-end justify-around space-x-2">
+                    ${monthlyChartData.map(d => `
+                        <div class="flex-1 flex flex-col items-center justify-end" title="${d.name}">
+                            <div class="w-full flex justify-around items-end" style="height: 100%;">
+                              <div class="w-1/3 bg-blue-500 rounded-t" style="height: ${((d.inflow || 0) / maxMonthlyValue) * 100}%" title="Inflow: ${formatCurrency(d.inflow || 0)}"></div>
+                              <div class="w-1/3 bg-red-500 rounded-t" style="height: ${((d.outflow || 0) / maxMonthlyValue) * 100}%" title="Outflow: ${formatCurrency(d.outflow || 0)}"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${d.name}</p>
+                        </div>
+                    `).join('')}
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold mb-4">Expense Categories</h3>
+                     ${mainCategories.length > 0 ? `
+                        <div class="flex items-center justify-center h-full space-x-4">
+                            <div class="w-36 h-36 rounded-full" style="background: conic-gradient(${conicGradient});"></div>
+                            <div class="space-y-2 text-xs">
+                               ${mainCategories.map(([name, value], index) => `
+                                <div class="flex items-center">
+                                    <span class="w-3 h-3 mr-2 rounded-sm" style="background-color: ${colors[index % colors.length]}"></span>
+                                    <span>${name}</span>
+                                </div>
+                               `).join('')}
+                            </div>
+                        </div>
+                    ` : `<div class="flex items-center justify-center h-full text-sm text-gray-500">Create a voucher to see expense categories.</div>`}
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                <h3 class="text-lg font-semibold mb-4">Recent Transactions</h3>
+                <div class="overflow-x-auto">
+                    ${recentTransactions.length > 0 ? `
+                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Voucher ID</th><th scope="col" class="px-6 py-3">Date</th>
+                                    <th scope="col" class="px-6 py-3">Narration</th><th scope="col" class="px-6 py-3">Type</th>
+                                    <th scope="col" class="px-6 py-3 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${recentTransactions.map(voucher => {
+                                    const totalDebit = voucher.voucher_entries.reduce((sum, e) => sum + parseFloat(e.debit), 0);
+                                    const totalCredit = voucher.voucher_entries.reduce((sum, e) => sum + parseFloat(e.credit), 0);
+                                    const amount = Math.abs(totalCredit - totalDebit);
+                                    const statusClass = totalCredit > totalDebit ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+                                    const amountClass = totalCredit > totalDebit ? 'text-green-600' : 'text-red-600';
+                                    return `
+                                    <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600/50">
+                                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">${voucher.id}</td>
+                                        <td class="px-6 py-4">${voucher.date}</td>
+                                        <td class="px-6 py-4 truncate max-w-xs">${voucher.narration || voucher.voucher_entries.map(e => e.narration).filter(Boolean).join(', ')}</td>
+                                        <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusClass}">${voucher.type}</span></td>
+                                        <td class="px-6 py-4 text-right font-semibold ${amountClass}">${formatCurrency(amount)}</td>
+                                    </tr>`
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    ` : `<div class="text-center py-8 text-gray-500 dark:text-gray-400">No transactions found.</div>`}
+                </div>
+            </div>
+        </div>`;
+};
+
+const Accounts = () => {
+    const accountBalances = new Map();
+    state.accounts.forEach(account => {
+        accountBalances.set(account.id, calculateAccountBalance(account.id));
+    });
+
+    return `
+        <div class="space-y-6">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Accounts</h1>
+                <button data-action="add-account" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm bg-primary-600 text-white hover:bg-primary-700">
+                    ${ICONS.Plus('w-5 h-5 mr-2')} Add Account
+                </button>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Account Name</th><th scope="col" class="px-6 py-3">Type</th>
+                                <th scope="col" class="px-6 py-3 text-right">Opening Balance</th><th scope="col" class="px-6 py-3 text-right">Current Balance</th>
+                                <th scope="col" class="px-6 py-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${state.accounts.map(account => `
+                                <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600/50">
+                                    <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">${account.name}</td>
+                                    <td class="px-6 py-4">${account.type}</td>
+                                    <td class="px-6 py-4 text-right">${formatCurrency(account.opening_balance)}</td>
+                                    <td class="px-6 py-4 text-right font-semibold">${formatCurrency(accountBalances.get(account.id) || 0)}</td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex justify-center space-x-2">
+                                            <button data-action="edit-account" data-id="${account.id}" class="text-primary-600 hover:text-primary-800">${ICONS.PencilSquare('w-5 h-5')}</button>
+                                            <button data-action="delete-account-click" data-id="${account.id}" class="text-red-600 hover:text-red-800">${ICONS.Trash('w-5 h-5')}</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>`;
+};
+
+const Vouchers = () => {
+    const sortedVouchers = [...state.vouchers].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return `
+        <div class="space-y-6">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Vouchers</h1>
+                <a href="#/vouchers/new" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm bg-primary-600 text-white hover:bg-primary-700">
+                    ${ICONS.Plus('w-5 h-5 mr-2')} Create Voucher
+                </a>
+            </div>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                         <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Date</th><th scope="col" class="px-6 py-3">Voucher ID</th>
+                                <th scope="col" class="px-6 py-3">Type</th><th scope="col" class="px-6 py-3">Narration</th>
+                                <th scope="col" class="px-6 py-3 text-right">Amount</th><th scope="col" class="px-6 py-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedVouchers.map(voucher => {
+                                const totalDebit = voucher.voucher_entries.reduce((sum, e) => sum + parseFloat(e.debit), 0);
+                                return `
+                                <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600/50">
+                                    <td class="px-6 py-4">${new Date(voucher.date).toLocaleDateString()}</td>
+                                    <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">${voucher.id}</td>
+                                    <td class="px-6 py-4">${voucher.type}</td>
+                                    <td class="px-6 py-4 truncate max-w-sm">${voucher.narration}</td>
+                                    <td class="px-6 py-4 text-right font-semibold">${formatCurrency(totalDebit)}</td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex justify-center space-x-2">
+                                             <a href="#/vouchers/edit/${voucher.id}" class="text-primary-600 hover:text-primary-800">${ICONS.PencilSquare('w-5 h-5')}</a>
+                                             <button data-action="delete-voucher-click" data-id="${voucher.id}" class="text-red-600 hover:text-red-800">${ICONS.Trash('w-5 h-5')}</button>
+                                        </div>
+                                    </td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>`;
+};
+
+const VoucherEditor = (id) => {
+    const voucher = id ? state.vouchers.find(v => v.id === id) : null;
+    const date = voucher ? voucher.date : new Date().toISOString().split('T')[0];
+    const type = voucher ? voucher.type : VoucherType.Journal;
+    const narration = voucher ? voucher.narration : '';
+    const entries = voucher ? voucher.voucher_entries : [{ accountId: '', narration: '', debit: 0, credit: 0 }, { accountId: '', narration: '', debit: 0, credit: 0 }];
+
+    const totalDebit = entries.reduce((sum, e) => sum + Number(e.debit), 0);
+    const totalCredit = entries.reduce((sum, e) => sum + Number(e.credit), 0);
+    const isBalanced = totalDebit === totalCredit && totalDebit > 0;
+    
+    return `
+    <div id="voucher-editor-container" data-voucher-id="${id || ''}" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md space-y-6">
+        <h2 class="text-2xl font-bold">${id ? `Edit Voucher ${id}` : 'Create New Voucher'}</h2>
+        <form id="voucher-form">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Voucher Date</label>
+                    <input name="date" type="date" value="${date}" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Voucher Type</label>
+                    <select name="type" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
+                        ${Object.values(VoucherType).map(t => `<option value="${t}" ${type === t ? 'selected' : ''}>${t}</option>`).join('')}
+                    </select>
+                </div>
+                 <div class="md:col-span-3">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Overall Narration</label>
+                    <input name="narration" type="text" value="${narration}" placeholder="e.g., Paid monthly rent" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm"/>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th class="px-2 py-3 w-2/5">Account Name</th>
+                            <th class="px-2 py-3 w-2/5">Narration</th>
+                            <th class="px-2 py-3 text-right">Debit</th>
+                            <th class="px-2 py-3 text-right">Credit</th>
+                            <th class="px-2 py-3 text-center"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="voucher-entries">
+                       ${entries.map((entry, index) => `
+                            <tr data-index="${index}">
+                                <td>
+                                    <select name="accountId" class="entry-field w-full bg-transparent border-b dark:border-gray-600 focus:outline-none focus:ring-0 focus:border-primary-500 py-1">
+                                        <option value="">Select Account</option>
+                                        ${state.accounts.map(acc => `<option value="${acc.id}" ${entry.account_id === acc.id ? 'selected' : ''}>${acc.name}</option>`).join('')}
+                                    </select>
+                                </td>
+                                <td><input name="narration" type="text" value="${entry.narration}" class="entry-field w-full bg-transparent border-b dark:border-gray-600 focus:outline-none focus:ring-0 focus:border-primary-500 py-1"/></td>
+                                <td><input name="debit" type="number" step="0.01" value="${entry.debit}" class="entry-field w-full text-right bg-transparent border-b dark:border-gray-600 focus:outline-none focus:ring-0 focus:border-primary-500 py-1"/></td>
+                                <td><input name="credit" type="number" step="0.01" value="${entry.credit}" class="entry-field w-full text-right bg-transparent border-b dark:border-gray-600 focus:outline-none focus:ring-0 focus:border-primary-500 py-1"/></td>
+                                <td class="text-center">
+                                    <button type="button" data-action="remove-entry-row" data-index="${index}" class="text-red-500 hover:text-red-700">
+                                        ${ICONS.Trash('w-4 h-4')}
+                                    </button>
+                                </td>
+                            </tr>
+                       `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <button type="button" data-action="add-entry-row" class="mt-4 flex items-center text-sm text-primary-600 hover:text-primary-800">
+                ${ICONS.Plus('w-4 h-4 mr-1')} Add Row
+            </button>
+
+            <div class="flex justify-end mt-6 items-center">
+                <div id="voucher-totals" class="p-2 rounded-md font-semibold text-sm ${isBalanced ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'}">
+                   <span>Debit: ${formatCurrency(totalDebit)}</span>
+                   <span class="mx-2">|</span>
+                   <span>Credit: ${formatCurrency(totalCredit)}</span>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-6 border-t dark:border-gray-700 mt-6">
+                <a href="#/vouchers" class="px-4 py-2 border rounded-md shadow-sm bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Cancel</a>
+                <button type="submit" ${!isBalanced ? 'disabled' : ''} class="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                    ${id ? 'Update Voucher' : 'Save Voucher'}
+                </button>
+            </div>
+        </form>
+    </div>`;
+};
+
+const Reports = () => {
+    return `
+        <div class="space-y-6">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Reports</h1>
+            
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <form id="report-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                    <div class="md:col-span-2">
+                        <label for="report-account-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account</label>
+                        <select id="report-account-select" name="accountId" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Select an account</option>
+                            ${state.accounts.map(acc => `<option value="${acc.id}">${acc.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="report-start-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+                        <input type="date" id="report-start-date" name="startDate" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
+                    </div>
+                    <div>
+                        <label for="report-end-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                        <input type="date" id="report-end-date" name="endDate" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
+                    </div>
+                    <button type="submit" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary-600 text-white hover:bg-primary-700">Generate</button>
+                </form>
+            </div>
+            <div id="report-output"></div>
+        </div>`;
+};
+
+const Settings = () => `
+    <div class="space-y-8 max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Settings</h1>
+        
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2 dark:border-gray-700">General Settings</h2>
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="setting-currency" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency Symbol</label>
+                        <input type="text" id="setting-currency" value="${state.settings.currency}" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm"/>
+                    </div>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button data-action="save-settings" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm bg-primary-600 text-white hover:bg-primary-700">
+                        Save Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2 dark:border-gray-700">Data Management</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div><h3 class="font-medium">Backup Data</h3><p class="text-sm text-gray-500 dark:text-gray-400">Download all your data as a JSON file.</p></div>
+                <div class="text-right"><button data-action="backup-data" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Backup Now</button></div>
+            </div>
+        </div>
+
+        <div class="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-red-800 dark:text-red-300 mb-2">Danger Zone</h2>
+            <p class="text-red-700 dark:text-red-400 mb-4">This action is irreversible and will permanently delete all your application data.</p>
+            <button data-action="reset-data" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm bg-red-600 text-white hover:bg-red-700">Reset All Data</button>
+        </div>
+    </div>`;
+
+const Modal = ({ title, children, id = '' }) => `
+    <div id="${id}" class="modal-container fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center" role="dialog">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg m-4">
+        <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">${title}</h3>
+          <button data-action="close-modal" class="text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg p-1.5" aria-label="Close modal">
+            ${ICONS.XMark('w-5 h-5')}
+          </button>
+        </div>
+        <div class="p-6">${children}</div>
+      </div>
+    </div>`;
+
+const ConfirmationModal = ({ title, message, id }) => Modal({
+    id, title,
+    children: `
+        <div class="space-y-4">
+            <p class="text-gray-600 dark:text-gray-300">${message}</p>
+            <div class="flex justify-end space-x-2 pt-4">
+                <button data-action="close-modal" class="px-4 py-2 border rounded-md shadow-sm bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Cancel</button>
+                <button data-action="confirm-delete" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700">Confirm</button>
+            </div>
+        </div>`
+});
+
+const AccountModal = (account) => {
+    const isEdit = !!account;
+    return Modal({
+        id: 'account-modal', title: isEdit ? 'Edit Account' : 'Add New Account',
+        children: `
+            <form id="account-form" data-id="${isEdit ? account.id : ''}">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium">Account Name</label>
+                        <input name="name" value="${isEdit ? account.name : ''}" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">Account Type</label>
+                        <select name="type" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+                           ${Object.values(AccountType).map(t => `<option value="${t}" ${isEdit && account.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">Opening Balance</label>
+                        <input name="openingBalance" type="number" step="0.01" value="${isEdit ? account.opening_balance : 0}" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
+                    </div>
+                    <div class="flex justify-end space-x-2 pt-4">
+                        <button type="button" data-action="close-modal" class="px-4 py-2 border rounded-md shadow-sm bg-gray-200">Cancel</button>
+                        <button type="submit" class="px-4 py-2 border rounded-md shadow-sm text-white bg-primary-600">Save Account</button>
+                    </div>
+                </div>
+            </form>`
+    });
+};
+
+
+// --- ROUTING & APP RENDER ---
+let currentModal = null;
+let itemToDelete = null;
+
+function router() {
+    const path = window.location.hash || '#/';
+    let pageContent;
+
+    if (path.startsWith('#/vouchers/edit/')) {
+        const id = path.split('/')[3];
+        pageContent = VoucherEditor(id);
+    } else if (path === '#/vouchers/new') {
+        pageContent = VoucherEditor(null);
+    } else {
+        switch (path) {
+            case '#/accounts': pageContent = Accounts(); break;
+            case '#/vouchers': pageContent = Vouchers(); break;
+            case '#/reports': pageContent = Reports(); break;
+            case '#/settings': pageContent = Settings(); break;
+            default: pageContent = Dashboard();
+        }
+    }
+    return pageContent;
+}
+
+function renderApp() {
+    const app = document.getElementById('app');
+    const isSidebarOpen = state.ui?.isSidebarOpen ?? false;
+    app.innerHTML = `
+        <div class="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+            <div class="hidden md:flex flex-shrink-0">${Sidebar()}</div>
+            <div id="mobile-sidebar-container" class="fixed inset-0 z-30 transform -translate-x-full md:hidden ${isSidebarOpen ? 'open' : ''}">
+                <div data-action="toggle-sidebar" class="absolute inset-0 bg-black opacity-50"></div>
+                <div class="relative w-64 h-full">${Sidebar()}</div>
+            </div>
+            <div class="flex-1 flex flex-col overflow-hidden">
+                ${Header()}
+                <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 lg:p-8">${router()}</main>
+            </div>
+        </div>
+        <div id="modal-root">${currentModal || ''}</div>
+    `;
+}
+
+// --- EVENT HANDLERS ---
+document.addEventListener('click', e => {
+    const action = e.target.closest('[data-action]');
+    if (!action) return;
+
+    const actionName = action.dataset.action;
+    const id = action.dataset.id;
+    
+    switch(actionName) {
+        case 'toggle-theme':
+            toggleTheme();
+            break;
+        case 'toggle-sidebar':
+            state.ui.isSidebarOpen = !state.ui.isSidebarOpen;
+            renderApp();
+            break;
+        case 'add-account':
+            currentModal = AccountModal(null);
+            renderApp();
+            break;
+        case 'edit-account':
+            const accountToEdit = state.accounts.find(a => a.id === id);
+            currentModal = AccountModal(accountToEdit);
+            renderApp();
+            break;
+        case 'delete-account-click':
+            itemToDelete = { type: 'account', id };
+            currentModal = ConfirmationModal({
+                id: 'confirm-modal', title: 'Delete Account', message: 'Are you sure you want to delete this account? This action cannot be undone.'
+            });
+            renderApp();
+            break;
+        case 'delete-voucher-click':
+            itemToDelete = { type: 'voucher', id };
+            currentModal = ConfirmationModal({
+                id: 'confirm-modal', title: 'Delete Voucher', message: 'Are you sure you want to delete this voucher? This action cannot be undone.'
+            });
+            renderApp();
+            break;
+        case 'confirm-delete':
+            if (itemToDelete?.type === 'account') deleteAccountById(itemToDelete.id);
+            if (itemToDelete?.type === 'voucher') deleteVoucherById(itemToDelete.id);
+            itemToDelete = null;
+            currentModal = null;
+            renderApp();
+            break;
+        case 'close-modal':
+            currentModal = null;
+            renderApp();
+            break;
+        case 'save-settings':
+            const currency = document.getElementById('setting-currency').value;
+            updateSettingsInDB({ currency });
+            break;
+        case 'backup-data':
+            const jsonData = JSON.stringify(state, null, 2);
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cashbook-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            break;
+        case 'reset-data':
+            if (window.confirm('DANGER: Are you absolutely sure you want to delete all data?')) {
+                resetData();
+            }
+            break;
+        case 'add-entry-row':
+        case 'remove-entry-row':
+            const editor = document.getElementById('voucher-editor-container');
+            if(editor) {
+                const voucherId = editor.dataset.voucherId;
+                const existingVoucher = voucherId ? state.vouchers.find(v => v.id === voucherId) : null;
+                const tempVoucher = {
+                    date: editor.querySelector('[name="date"]').value,
+                    type: editor.querySelector('[name="type"]').value,
+                    narration: editor.querySelector('[name="narration"]').value,
+                    entries: Array.from(editor.querySelectorAll('#voucher-entries tr')).map(row => ({
+                        accountId: row.querySelector('[name="accountId"]').value,
+                        narration: row.querySelector('[name="narration"]').value,
+                        debit: parseFloat(row.querySelector('[name="debit"]').value) || 0,
+                        credit: parseFloat(row.querySelector('[name="credit"]').value) || 0,
+                    }))
+                };
+                if(actionName === 'add-entry-row') {
+                    tempVoucher.entries.push({ accountId: '', narration: '', debit: 0, credit: 0 });
+                } else {
+                    const indexToRemove = parseInt(action.dataset.index, 10);
+                    if(tempVoucher.entries.length > 2) {
+                       tempVoucher.entries.splice(indexToRemove, 1);
+                    } else {
+                       alert('A voucher must have at least two entries.');
+                    }
+                }
+                const newEditorHtml = VoucherEditor(voucherId);
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = newEditorHtml;
+                const newContent = tempDiv.querySelector('#voucher-editor-container');
+                editor.replaceWith(newContent);
+
+                // Re-populate entries to preserve user input
+                const newRows = newContent.querySelectorAll('#voucher-entries tr');
+                tempVoucher.entries.forEach((entry, index) => {
+                    if(newRows[index]) {
+                        newRows[index].querySelector('[name="accountId"]').value = entry.accountId;
+                        newRows[index].querySelector('[name="narration"]').value = entry.narration;
+                        newRows[index].querySelector('[name="debit"]').value = entry.debit;
+                        newRows[index].querySelector('[name="credit"]').value = entry.credit;
+                    }
+                });
+            }
+            break;
+    }
+});
+
+document.addEventListener('input', e => {
+    // Live update for voucher editor totals
+    if (e.target.closest('#voucher-editor-container')) {
+        const editor = e.target.closest('#voucher-editor-container');
+        const entries = Array.from(editor.querySelectorAll('#voucher-entries tr')).map(row => ({
+            debit: parseFloat(row.querySelector('[name="debit"]').value) || 0,
+            credit: parseFloat(row.querySelector('[name="credit"]').value) || 0,
+        }));
+        const totalDebit = entries.reduce((sum, e) => sum + e.debit, 0);
+        const totalCredit = entries.reduce((sum, e) => sum + e.credit, 0);
+        const isBalanced = totalDebit === totalCredit && totalDebit > 0;
+
+        const totalsEl = editor.querySelector('#voucher-totals');
+        totalsEl.innerHTML = `<span>Debit: ${formatCurrency(totalDebit)}</span><span class="mx-2">|</span><span>Credit: ${formatCurrency(totalCredit)}</span>`;
+        totalsEl.className = `p-2 rounded-md font-semibold text-sm ${isBalanced ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'}`;
+        editor.querySelector('button[type="submit"]').disabled = !isBalanced;
+    }
+});
+
+
+document.addEventListener('submit', async e => {
+    e.preventDefault();
+    const form = e.target;
+    
+    if (form.id === 'account-form') {
+        const id = form.dataset.id;
+        const formData = new FormData(form);
+        const accountData = {
+            name: formData.get('name'),
+            type: formData.get('type'),
+            openingBalance: parseFloat(formData.get('openingBalance')),
+        };
+        
+        let success = false;
+        if (id) {
+            success = await updateAccount(id, accountData);
+        } else {
+            success = await addAccount(accountData);
+        }
+        
+        if (success) {
+            currentModal = null;
+            renderApp();
+        }
+    }
+    
+    if (form.id === 'voucher-form') {
+        const id = document.getElementById('voucher-editor-container').dataset.voucherId;
+        const entries = Array.from(document.querySelectorAll('#voucher-entries tr')).map(row => ({
+            accountId: row.querySelector('[name="accountId"]').value,
+            narration: row.querySelector('[name="narration"]').value,
+            debit: parseFloat(row.querySelector('[name="debit"]').value) || 0,
+            credit: parseFloat(row.querySelector('[name="credit"]').value) || 0,
+        }));
+        
+        const voucherData = {
+            date: form.querySelector('[name="date"]').value,
+            type: form.querySelector('[name="type"]').value,
+            narration: form.querySelector('[name="narration"]').value,
+            entries: entries.filter(e => e.accountId),
+        };
+        
+        let success = false;
+        if (id) {
+            success = await updateVoucher(id, voucherData);
+        } else {
+            success = await addVoucher(voucherData);
+        }
+    }
+    
+    if (form.id === 'report-form') {
+        const formData = new FormData(form);
+        const accountId = formData.get('accountId');
+        const startDate = formData.get('startDate');
+        const endDate = formData.get('endDate');
+
+        if (!accountId || !startDate || !endDate) {
+            alert('Please select an account and a date range.');
+            return;
+        }
+
+        const account = state.accounts.find(a => a.id === accountId);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
+        const openingBalance = calculateAccountBalanceAsOf(accountId, start);
+
+        let runningBalance = openingBalance;
+        const transactions = state.vouchers
+            .filter(v => { const vDate = new Date(v.date); return vDate >= start && vDate <= end; })
+            .flatMap(v => v.voucher_entries
+                .filter(e => e.account_id === accountId)
+                .map(e => {
+                    runningBalance += parseFloat(e.debit) - parseFloat(e.credit);
+                    return { ...e, date: v.date, voucherId: v.id, runningBalance };
+                })
+            )
+            .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            
+        const totalDebit = transactions.reduce((sum, e) => sum + parseFloat(e.debit), 0);
+        const totalCredit = transactions.reduce((sum, e) => sum + parseFloat(e.credit), 0);
+        const closingBalance = runningBalance;
+
+        document.getElementById('report-output').innerHTML = `
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <div class="flex justify-between items-start">
+                    <div id="printable-area" class="w-full ${state.theme === 'dark' ? 'dark-mode-print-fix' : ''}">
+                        <div class="p-4 bg-white dark:bg-gray-800 text-black dark:text-white">
+                            <div class="text-center mb-6">
+                                <h2 class="text-2xl font-bold">${account.name}</h2>
+                                <p class="text-gray-500 dark:text-gray-400">Account Ledger</p>
+                                <p class="text-gray-500 dark:text-gray-400">Period: ${start.toLocaleDateString()} to ${end.toLocaleDateString()}</p>
+                            </div>
+                            <table class="w-full text-sm">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">Date</th><th class="px-4 py-3 text-left">Voucher ID</th>
+                                        <th class="px-4 py-3 text-left">Narration</th><th class="px-4 py-3 text-right">Debit</th>
+                                        <th class="px-4 py-3 text-right">Credit</th><th class="px-4 py-3 text-right">Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="font-semibold border-b dark:border-gray-700"><td colSpan="5" class="px-4 py-2">Opening Balance</td><td class="px-4 py-2 text-right">${formatCurrency(openingBalance)}</td></tr>
+                                    ${transactions.map(e => `
+                                        <tr class="border-b dark:border-gray-700">
+                                            <td class="px-4 py-2">${new Date(e.date).toLocaleDateString()}</td><td class="px-4 py-2">${e.voucherId}</td>
+                                            <td class="px-4 py-2">${e.narration}</td>
+                                            <td class="px-4 py-2 text-right">${parseFloat(e.debit) > 0 ? formatCurrency(e.debit) : '-'}</td>
+                                            <td class="px-4 py-2 text-right">${parseFloat(e.credit) > 0 ? formatCurrency(e.credit) : '-'}</td>
+                                            <td class="px-4 py-2 text-right">${formatCurrency(e.runningBalance)}</td>
+                                        </tr>
+                                    `).join('')}
+                                    <tr class="font-semibold bg-gray-50 dark:bg-gray-700"><td colSpan="3" class="px-4 py-2 text-right">Totals</td>
+                                    <td class="px-4 py-2 text-right">${formatCurrency(totalDebit)}</td><td class="px-4 py-2 text-right">${formatCurrency(totalCredit)}</td><td></td></tr>
+                                    <tr class="font-bold text-lg bg-gray-100 dark:bg-gray-900"><td colSpan="5" class="px-4 py-3 text-right">Closing Balance</td>
+                                    <td class="px-4 py-3 text-right">${formatCurrency(closingBalance)}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                     <button onclick="window.print()" class="ml-4 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+                        ${ICONS.Printer('w-5 h-5 mr-2')} Print
+                    </button>
+                </div>
+             </div>`;
+    }
+});
+
+// Reset data function for Supabase
+async function resetData() {
+    try {
+        // Delete all data from Supabase
+        await supabase.from('voucher_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('vouchers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('accounts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        // Reload data
+        const data = await loadData();
+        state.accounts = data.accounts;
+        state.vouchers = data.vouchers;
+        state.settings = data.settings;
+        
+        alert('All data has been reset successfully!');
+        renderApp();
+    } catch (error) {
+        alert('Error resetting data: ' + error.message);
+    }
+}
+
+// --- INITIALIZATION ---
+async function init() {
+    try {
+        const data = await loadData();
+        state.accounts = data.accounts;
+        state.vouchers = data.vouchers;
+        state.settings = data.settings;
+        state.ui = { isSidebarOpen: false };
+        applyTheme(localStorage.getItem('theme'));
+        window.addEventListener('hashchange', renderApp);
+        renderApp();
+        
+        // Hide loading screen
+        document.getElementById('loading').style.display = 'none';
+    } catch (error) {
+        console.error("Error initializing app:", error);
+        document.getElementById('loading').innerHTML = `
+            <div class="text-center">
+                <div class="text-red-500 text-xl mb-4">Error Loading Application</div>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">Failed to connect to database.</p>
+                <button onclick="location.reload()" class="px-4 py-2 bg-primary-600 text-white rounded-md">Retry</button>
+            </div>
+        `;
+    }
+}
+
+init();
+
+</script>
 </body>
 </html>
