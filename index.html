@@ -3,23 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Poultry Farm — Purchase Order</title>
+  <title>Poultry — Purchase Orders</title>
   <style>
     :root{
-      --bg:#f5f7fb; --card:#ffffff; --accent:#1565c0; --muted:#6b7280; --success:#16a34a;
-      --danger:#ef4444; --glass: rgba(255,255,255,0.7);
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --bg:#f5f7fb; --card:#fff; --accent:#1565c0; --muted:#6b7280;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
     }
     body{ margin:0; background:linear-gradient(180deg,#eef2ff 0%, var(--bg) 100%); color:#0f172a; }
     .wrap{ max-width:1100px; margin:28px auto; padding:20px; }
     header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px }
-    h1{ margin:0; font-size:20px; letter-spacing:0.2px }
+    h1{ margin:0; font-size:20px; }
     .card{ background:var(--card); border-radius:12px; padding:16px; box-shadow:0 6px 18px rgba(12,20,40,0.06); }
     form .row{ display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
     label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
     input[type="text"], input[type="date"], input[type="number"], select, textarea{
-      width:100%; padding:10px 12px; border:1px solid #e6edf3; border-radius:8px; background:transparent;
-      font-size:14px; color: #0f172a;
+      width:100%; padding:10px 12px; border:1px solid #e6edf3; border-radius:8px;
+      font-size:14px; color: #0f172a; background:transparent;
     }
     .col{ flex:1; min-width:160px; }
     .col.w-40{ flex:0 0 40%; }
@@ -31,7 +30,7 @@
     .btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; border:none; cursor:pointer; }
     .btn-primary{ background:var(--accent); color:white; }
     .btn-ghost{ background:transparent; border:1px solid #e6edf3; color:var(--muted); }
-    .btn-danger{ background:var(--danger); color:white; }
+    .btn-danger{ background:#ef4444; color:white; }
     .muted{ color:var(--muted); font-size:13px; }
     .calc{ display:flex; gap:12px; justify-content:flex-end; margin-top:12px; }
     .calc .box{ background:#fafbff; padding:10px 12px; border-radius:8px; min-width:200px; text-align:right; }
@@ -54,20 +53,20 @@
     <header>
       <div>
         <h1>Purchase Order — Poultry Farm</h1>
-        <small class="muted">Create and manage purchase orders for multiple farms</small>
+        <small class="muted">Create and manage POs for multiple farms</small>
       </div>
       <div>
         <button id="btnNew" class="btn btn-primary">New PO</button>
-        <button id="btnRefresh" class="btn btn-ghost">Refresh</button>
+        <button id="btnRefresh" class="btn btn-ghost">Refresh List</button>
       </div>
     </header>
 
     <div id="mainCard" class="card">
-      <form id="poForm">
+      <form id="poForm" onsubmit="return false;">
         <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px; flex-wrap:wrap">
           <div class="col w-20">
             <label>PO Number</label>
-            <input type="text" id="po_number" readonly />
+            <input type="text" id="po_number" readonly placeholder="(will be generated on save)" />
           </div>
           <div class="col w-20">
             <label>PO Date</label>
@@ -87,7 +86,7 @@
           <div class="col">
             <label>Supplier</label>
             <select id="supplier_select"></select>
-            <small class="muted">Or choose "Manual / New" and fill Supplier details below</small>
+            <small class="muted">Or choose "Manual / New" and fill supplier fields.</small>
           </div>
           <div class="col">
             <label>Supplier Name (manual)</label>
@@ -188,7 +187,7 @@
         </div>
 
         <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px">
-          <button id="btnSave" type="button" class="btn btn-primary">Save PO</button>
+          <button id="btnSave" type="button" class="btn btn-primary">Save & Submit</button>
           <button id="btnSaveDraft" type="button" class="btn btn-ghost">Save Draft</button>
           <button id="btnClear" type="button" class="btn btn-danger">Clear Form</button>
         </div>
@@ -201,24 +200,24 @@
     </div>
   </div>
 
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.js"></script>
+  <!-- Supabase UMD (v2) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
-    // ---------- CONFIGURE Supabase ----------
+     // ---------- CONFIGURE Supabase ----------
     const SUPABASE_URL = 'https://khwwkgztjoddkveqcree.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtod3drZ3p0am9kZGt2ZXFjcmVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyMzA5MjAsImV4cCI6MjA3OTgwNjkyMH0.0Py6OIx_yYvw8mAS8JFqkJX6ZsD3gzdgXYeo2bK9Qds';
     const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ---------- Utilities ----------
+    
+    // ---------- Helpers ----------
     function moneyFmt(n){ return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
     function round2(n){ return Math.round((Number(n) + Number.EPSILON) * 100) / 100; }
-
-    // careful multiplication to avoid floating issues
-    function mul(a,b){
-      return round2( (Math.round(a*100) * Math.round(b*100)) / 10000 );
+    function mul(a,b){ return round2( (Math.round(a*100) * Math.round(b*100)) / 10000 ); }
+    function escapeHtml(str = '') {
+      return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
-    // ---------- DOM ----------
+    // ---------- DOM binds ----------
     const itemsBody = document.getElementById('itemsBody');
     const addItemBtn = document.getElementById('addItemBtn');
     const subtotalEl = document.getElementById('subtotal');
@@ -254,11 +253,11 @@
 
     let items = [];
 
-    // ---------- Initialization ----------
+    // ---------- Init ----------
     (async function init(){
       setupEventListeners();
-      resetForm();
       await loadSuppliers();
+      await resetForm();
       await loadRecentPOs();
     })();
 
@@ -277,64 +276,57 @@
       btnRefresh.addEventListener('click', loadRecentPOs);
     }
 
+    // ---------- Suppliers ----------
     async function loadSuppliers(){
-      // fetch suppliers table; if none found, populate "Manual / New"
-      supplierSelect.innerHTML = '<option value="">Loading suppliers...</option>';
+      supplierSelect.innerHTML = '<option value="">Loading...</option>';
       try{
-        const { data, error } = await supabase.from('suppliers').select('*').order('name', {ascending:true}).limit(200);
-        if(error){ console.warn('supplier load error', error); supplierSelect.innerHTML = '<option value="">Manual / New</option>'; return; }
-        let options = '<option value="">Manual / New</option>';
+        const { data, error } = await supabase.from('suppliers').select('*').order('name',{ascending:true}).limit(500);
+        if(error){ console.warn(error); supplierSelect.innerHTML = '<option value="">Manual / New</option>'; return; }
+        let html = '<option value="">Manual / New</option>';
         data.forEach(s => {
-          options += `<option value="${s.id}" data-contact="${s.phone||''}" data-address="${s.address||''}">${escapeHtml(s.name)}</option>`;
+          html += `<option value="${s.id}" data-contact="${escapeHtml(s.phone||'')}" data-address="${escapeHtml(s.address||'')}">${escapeHtml(s.name)}</option>`;
         });
-        supplierSelect.innerHTML = options;
-        supplierSelect.addEventListener('change', onSupplierChange);
-      }catch(e){
+        supplierSelect.innerHTML = html;
+        supplierSelect.addEventListener('change', (e) => {
+          const opt = e.target.selectedOptions[0];
+          if(!opt) return;
+          if(!opt.value){ supplierNameEl.value=''; supplierContactEl.value=''; supplierAddressEl.value=''; return; }
+          supplierNameEl.value = opt.text;
+          supplierContactEl.value = opt.dataset.contact || '';
+          supplierAddressEl.value = opt.dataset.address || '';
+        });
+      }catch(err){
+        console.error(err);
         supplierSelect.innerHTML = '<option value="">Manual / New</option>';
       }
     }
 
-    function onSupplierChange(e){
-      const opt = e.target.selectedOptions[0];
-      if(!opt) return;
-      const id = opt.value;
-      if(!id){
-        supplierNameEl.value=''; supplierContactEl.value=''; supplierAddressEl.value='';
-        return;
-      }
-      supplierNameEl.value = opt.text;
-      supplierContactEl.value = opt.dataset.contact || '';
-      supplierAddressEl.value = opt.dataset.address || '';
-    }
-
-    // ---------- Items handling ----------
+    // ---------- Items ----------
     function addItemRow(item = { product_name:'', unit:'', quantity:0, unit_price:0 }){
       items.push(item);
       renderItems();
     }
-
     function removeItemRow(index){
       items.splice(index,1);
       renderItems();
     }
-
     function renderItems(){
       itemsBody.innerHTML = '';
       items.forEach((it, idx) => {
         const tr = document.createElement('tr');
+        const total = mul(Number(it.quantity||0), Number(it.unit_price||0));
         tr.innerHTML = `
           <td>${idx+1}</td>
           <td><input data-idx="${idx}" data-field="product_name" class="i-text" value="${escapeHtml(it.product_name||'')}" /></td>
           <td><input data-idx="${idx}" data-field="unit" class="i-text" value="${escapeHtml(it.unit||'')}" /></td>
           <td><input data-idx="${idx}" data-field="quantity" type="number" min="0" class="i-number" value="${it.quantity||0}" /></td>
           <td><input data-idx="${idx}" data-field="unit_price" type="number" min="0" class="i-number" value="${it.unit_price||0}" /></td>
-          <td class="right">${moneyFmt( mul(Number(it.quantity||0), Number(it.unit_price||0)) )}</td>
+          <td class="right">${moneyFmt(total)}</td>
           <td><button class="btn btn-ghost" data-action="remove" data-idx="${idx}">Remove</button></td>
         `;
         itemsBody.appendChild(tr);
       });
 
-      // attach listeners
       itemsBody.querySelectorAll('.i-text').forEach(inp => {
         inp.addEventListener('input', (e) => {
           const idx = Number(e.target.dataset.idx);
@@ -355,8 +347,7 @@
       });
       itemsBody.querySelectorAll('button[data-action="remove"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const idx = Number(e.target.dataset.idx);
-          removeItemRow(idx);
+          removeItemRow(Number(e.target.dataset.idx));
         });
       });
 
@@ -367,73 +358,35 @@
     function computeTotals(){
       let subtotal = 0;
       items.forEach(it => {
-        const q = Number(it.quantity || 0);
-        const p = Number(it.unit_price || 0);
-        subtotal += mul(q, p);
+        subtotal += mul(Number(it.quantity||0), Number(it.unit_price||0));
       });
       subtotal = round2(subtotal);
       subtotalEl.textContent = moneyFmt(subtotal);
 
       const taxPct = Number(taxPctEl.value || 0);
       const freight = round2(Number(freightEl.value || 0));
-
-      // tax amount = subtotal * taxPct/100
-      const taxAmount = round2( subtotal * (taxPct / 100) );
+      const taxAmount = round2(subtotal * (taxPct / 100));
       taxAmountEl.textContent = moneyFmt(taxAmount);
 
       const final = round2(subtotal + taxAmount + freight);
       finalTotalEl.textContent = moneyFmt(final);
     }
 
-    // ---------- PO number generation ----------
-    async function generatePO() {
-      // This reads the count of existing POS and generates PO-0001 style
-      try{
-        const { count, error } = await supabase.from('purchase_orders').select('id', { count: 'exact', head: true });
-        if(error){
-          // fallback to timestamp-based
-          return `PO-${Date.now()}`;
-        }
-        const num = (count || 0) + 1;
-        const padded = String(num).padStart(4,'0');
-        return `PO-${padded}`;
-      }catch(e){
-        return `PO-${Date.now()}`;
-      }
-    }
-
-    // ---------- Save / CRUD ----------
+    // ---------- Save PO ----------
     async function savePO(targetStatus = 'draft'){
-      // basic validation
       const forName = forNameEl.value.trim();
       const supplier_name = supplierNameEl.value.trim();
-      if(!forName){
-        alert('Please enter the "FOR (Farm or Person)" field.');
-        return;
-      }
-      if(!supplier_name){
-        if(!confirm('Supplier name is empty. Save anyway?')) return;
-      }
-      if(items.length === 0){
-        if(!confirm('There are no items. Save anyway?')) return;
-      }
+      if(!forName){ alert('Please enter FOR (farm or person).'); return; }
+      if(items.length === 0 && !confirm('No items added. Save anyway?')) return;
 
-      // compute totals
       computeTotals();
       const subtotal = Number(subtotalEl.textContent.replace(/,/g,'')) || 0;
       const tax = Number(taxAmountEl.textContent.replace(/,/g,'')) || 0;
-      const freight = Number(freightEl.value || 0);
+      const freight = round2(Number(freightEl.value || 0));
       const final_total = Number(finalTotalEl.textContent.replace(/,/g,'')) || 0;
 
-      // Prepare payload
-      let po_number = poNumberEl.value;
-      if(!po_number){
-        po_number = await generatePO();
-        poNumberEl.value = po_number;
-      }
-
+      // payload for purchase_orders
       const poPayload = {
-        po_number,
         po_date: poDateEl.value || new Date().toISOString().slice(0,10),
         for_name: forName,
         supplier_name,
@@ -445,63 +398,59 @@
         final_total,
         remarks: remarksEl.value || '',
         prepared_by: preparedByEl.value || '',
-        finance_approved_by: financeByEl.value || null,
-        director_approved_by: directorByEl.value || null,
         status: targetStatus
       };
 
       try{
-        // Insert purchase_orders
-        const { data: poData, error: poErr } = await supabase.from('purchase_orders').insert([poPayload]).select().single();
-        if(poErr){
-          console.error('PO insert error', poErr);
-          alert('Error saving PO: ' + poErr.message);
-          return;
-        }
+        // Insert PO and return created row (po_number will be generated by DB trigger if configured)
+        const { data: poData, error: poErr } = await supabase
+          .from('purchase_orders')
+          .insert([poPayload])
+          .select()
+          .single();
 
-        // Insert items
-        const itemRows = items.map(it => ({
-          po_id: poData.id,
-          product_name: it.product_name,
-          unit: it.unit,
+        if(poErr){ console.error('PO insert error', poErr); alert('Error saving PO: ' + poErr.message); return; }
+
+        // prepare items rows with computed totals
+        const itemRows = items.map((it, idx) => ({
+          purchase_order_id: poData.id,
+          item_no: idx + 1,
+          product_name: it.product_name || '',
+          unit: it.unit || '',
           quantity: Number(it.quantity || 0),
           unit_price: Number(it.unit_price || 0),
           total: mul(Number(it.quantity || 0), Number(it.unit_price || 0))
         }));
         if(itemRows.length > 0){
           const { error: itemErr } = await supabase.from('purchase_order_items').insert(itemRows);
-          if(itemErr){
-            console.error('items insert error', itemErr);
-            alert('PO saved but items failed: ' + itemErr.message);
-            return;
-          }
+          if(itemErr){ console.error('items insert error', itemErr); alert('PO saved but items failed: ' + itemErr.message); return; }
         }
 
-        // update prepared time
-        preparedTimeEl.textContent = new Date().toLocaleString();
-        statusEl.value = targetStatus;
-        alert('Purchase Order saved successfully: ' + poData.po_number);
+        // update UI with returned data
+        poNumberEl.value = poData.po_number || '';
+        preparedTimeEl.textContent = new Date(poData.created_at || Date.now()).toLocaleString();
+        statusEl.value = poData.status || targetStatus;
+        alert('Purchase Order saved: ' + (poData.po_number || '(no number returned)'));
         await loadRecentPOs();
       }catch(e){
         console.error(e);
-        alert('Unexpected error: ' + e.message);
+        alert('Unexpected error: ' + (e.message || e));
       }
     }
 
+    // ---------- Approvals ----------
     async function approveFinance(){
       const name = financeByEl.value.trim();
       if(!name){ alert('Enter finance approver name'); return; }
-      // mark times and status locally; update latest PO if present (simple approach: update PO with po_number displayed)
       const po_number = poNumberEl.value;
-      if(!po_number){ alert('No PO selected to approve. Save a PO first.'); return; }
-      const now = new Date().toISOString();
+      if(!po_number){ alert('No PO loaded. Save first.'); return; }
+
       try{
         const { data, error } = await supabase.from('purchase_orders').select('*').eq('po_number', po_number).limit(1).single();
-        if(error){ alert('PO not found to approve (save first).'); return; }
+        if(error){ alert('PO not found'); return; }
         const { error: upErr } = await supabase.from('purchase_orders').update({
-          finance_approved_by: name,
-          status: 'finance_approved',
-          // optionally store timestamps in separate columns if you add them
+          finance_checked_by: name,
+          status: 'finance_approved'
         }).eq('id', data.id);
         if(upErr){ alert('Approve error: ' + upErr.message); return; }
         financeTimeEl.textContent = new Date().toLocaleString();
@@ -509,8 +458,7 @@
         alert('Finance approved.');
         await loadRecentPOs();
       }catch(e){
-        console.error(e);
-        alert('Error: ' + e.message);
+        console.error(e); alert(e.message || e);
       }
     }
 
@@ -518,11 +466,11 @@
       const name = directorByEl.value.trim();
       if(!name){ alert('Enter director name'); return; }
       const po_number = poNumberEl.value;
-      if(!po_number){ alert('No PO selected to approve. Save a PO first.'); return; }
+      if(!po_number){ alert('No PO loaded. Save first.'); return; }
 
       try{
         const { data, error } = await supabase.from('purchase_orders').select('*').eq('po_number', po_number).limit(1).single();
-        if(error){ alert('PO not found to approve (save first).'); return; }
+        if(error){ alert('PO not found'); return; }
         const { error: upErr } = await supabase.from('purchase_orders').update({
           director_approved_by: name,
           status: 'director_approved'
@@ -533,16 +481,15 @@
         alert('Director approved. PO is now locked.');
         await loadRecentPOs();
       }catch(e){
-        console.error(e);
-        alert('Error: ' + e.message);
+        console.error(e); alert(e.message || e);
       }
     }
 
-    // ---------- List & view POs ----------
+    // ---------- List & load ----------
     async function loadRecentPOs(){
       poList.innerHTML = 'Loading...';
       try{
-        const { data, error } = await supabase.from('purchase_orders').select('*').order('created_at', {ascending:false}).limit(20);
+        const { data, error } = await supabase.from('purchase_orders').select('*').order('created_at',{ascending:false}).limit(30);
         if(error){ poList.innerHTML = 'Failed loading POs'; console.warn(error); return; }
         if(!data || data.length === 0){ poList.innerHTML = '<div class="muted">No POs yet</div>'; return; }
         poList.innerHTML = '';
@@ -551,8 +498,8 @@
           div.className = 'po-item';
           div.innerHTML = `
             <div>
-              <div style="font-weight:700">${escapeHtml(p.po_number)}</div>
-              <div class="muted">${escapeHtml(p.for_name || '')} • ${new Date(p.po_date).toLocaleDateString()}</div>
+              <div style="font-weight:700">${escapeHtml(p.po_number || '(no number)')}</div>
+              <div class="muted">${escapeHtml(p.for_name || '')} • ${new Date(p.po_date || p.created_at).toLocaleDateString()}</div>
               <div class="muted">Supplier: ${escapeHtml(p.supplier_name||'')}</div>
             </div>
             <div style="text-align:right">
@@ -566,56 +513,46 @@
           poList.appendChild(div);
         });
 
-        // attach view/load handlers
-        poList.querySelectorAll('button[data-action="view"]').forEach(b => {
-          b.addEventListener('click', async (e) => {
-            const id = e.target.dataset.id;
-            await viewPO(id);
-          });
-        });
-        poList.querySelectorAll('button[data-action="load"]').forEach(b => {
-          b.addEventListener('click', async (e) => {
-            const id = e.target.dataset.id;
-            await loadPOIntoForm(id);
-          });
-        });
+        poList.querySelectorAll('button[data-action="view"]').forEach(b => b.addEventListener('click', async (e) => {
+          await viewPO(e.target.dataset.id);
+        }));
+        poList.querySelectorAll('button[data-action="load"]').forEach(b => b.addEventListener('click', async (e) => {
+          await loadPOIntoForm(e.target.dataset.id);
+        }));
       }catch(e){
-        poList.innerHTML = 'Error loading POs';
-        console.error(e);
+        console.error(e); poList.innerHTML = 'Error loading POs';
       }
     }
 
     async function viewPO(id){
-      // open a modal-like alert for quick view
       const { data, error } = await supabase.from('purchase_orders').select('*').eq('id', id).single();
-      if(error){ alert('Failed to fetch PO details'); return; }
-      const { data: itemsData } = await supabase.from('purchase_order_items').select('*').eq('po_id', id);
+      if(error){ alert('Failed to fetch PO'); return; }
+      const { data: itemsData } = await supabase.from('purchase_order_items').select('*').eq('purchase_order_id', id).order('item_no',{ascending:true});
       let txt = `PO: ${data.po_number}\nDate: ${data.po_date}\nFor: ${data.for_name}\nSupplier: ${data.supplier_name}\n\nItems:\n`;
       (itemsData || []).forEach((it, idx) => {
         txt += `${idx+1}. ${it.product_name} — ${it.quantity} ${it.unit} × ${moneyFmt(it.unit_price)} = ${moneyFmt(it.total)}\n`;
       });
-      txt += `\nSubtotal: ${moneyFmt(data.subtotal)}\nTax: ${moneyFmt(data.tax)}\nFreight: ${moneyFmt(data.freight)}\nTotal: ${moneyFmt(data.final_total)}\n\nStatus: ${data.status}\nPrepared By: ${data.prepared_by}\nFinance: ${data.finance_approved_by}\nDirector: ${data.director_approved_by}\n\nRemarks:\n${data.remarks || ''}`;
+      txt += `\nSubtotal: ${moneyFmt(data.subtotal)}\nTax: ${moneyFmt(data.tax)}\nFreight: ${moneyFmt(data.freight)}\nTotal: ${moneyFmt(data.final_total)}\n\nStatus: ${data.status}\nPrepared By: ${data.prepared_by}\nFinance: ${data.finance_checked_by}\nDirector: ${data.director_approved_by}\n\nRemarks:\n${data.remarks || ''}`;
       alert(txt);
     }
 
     async function loadPOIntoForm(id){
       const { data, error } = await supabase.from('purchase_orders').select('*').eq('id', id).single();
       if(error){ alert('Failed to load PO'); return; }
-      const { data: itemsData } = await supabase.from('purchase_order_items').select('*').eq('po_id', id).order('id', {ascending:true});
-      // fill form
-      poNumberEl.value = data.po_number;
-      poDateEl.value = data.po_date;
-      forNameEl.value = data.for_name;
-      supplierNameEl.value = data.supplier_name;
-      supplierContactEl.value = data.supplier_contact;
-      supplierAddressEl.value = data.supplier_address;
+      const { data: itemsData } = await supabase.from('purchase_order_items').select('*').eq('purchase_order_id', id).order('item_no',{ascending:true});
+      poNumberEl.value = data.po_number || '';
+      poDateEl.value = data.po_date || new Date().toISOString().slice(0,10);
+      forNameEl.value = data.for_name || '';
+      supplierNameEl.value = data.supplier_name || '';
+      supplierContactEl.value = data.supplier_contact || '';
+      supplierAddressEl.value = data.supplier_address || '';
       remarksEl.value = data.remarks || '';
       preparedByEl.value = data.prepared_by || '';
-      financeByEl.value = data.finance_approved_by || '';
+      financeByEl.value = data.finance_checked_by || '';
       directorByEl.value = data.director_approved_by || '';
       statusEl.value = data.status || 'draft';
       preparedTimeEl.textContent = data.created_at ? new Date(data.created_at).toLocaleString() : '';
-      financeTimeEl.textContent = data.finance_approved_by ? '(approved)' : '';
+      financeTimeEl.textContent = data.finance_checked_by ? '(approved)' : '';
       directorTimeEl.textContent = data.director_approved_by ? '(approved)' : '';
       items = (itemsData || []).map(it => ({
         product_name: it.product_name,
@@ -628,19 +565,11 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ---------- Helpers ----------
-    function escapeHtml(str = '') {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    }
-
+    // ---------- Reset / initial ----------
     async function resetForm(){
       items = [];
-      renderItems();
-      poNumberEl.value = await generatePO();
+      addItemRow();
+      poNumberEl.value = '';
       poDateEl.value = new Date().toISOString().slice(0,10);
       forNameEl.value = '';
       supplierSelect.value = '';
@@ -657,10 +586,8 @@
       financeTimeEl.textContent = '';
       directorTimeEl.textContent = '';
       statusEl.value = 'draft';
-      addItemRow(); // start with one row
       computeTotals();
     }
-
   </script>
 </body>
 </html>
